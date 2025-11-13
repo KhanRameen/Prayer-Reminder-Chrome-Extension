@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "testingStuff",
+  "version": "1.0.0",
+  "description": "Testing extention using TS.",
+  "action": {
+    "default_popup": "public/popup.html",
+    "default_icon": "public/icons/pirate-parrot.png"
+  },
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "permissions": ["scripting", "activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content.js", "dist/popup.js"]
+    }
+  ]
+}
