@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(() => {
 getAllCountries();
 
 //API Calls
-// chrome.alarms.create("getPrayerTime", { periodInMinutes: 0.1 });
+chrome.alarms.create("getPrayerTime", { periodInMinutes: 0.1 });
 
 // chrome.alarms.onAlarm.addListener(async (alarm) => {
 //   if (alarm.name === "getPrayerTime") {
@@ -16,6 +16,7 @@ getAllCountries();
 //   }
 // });
 
+//Controllers
 const getPrayerTime = async () => {
   try {
     console.log("getting prayer time");
@@ -36,4 +37,19 @@ const getPrayerTime = async () => {
   }
 };
 
-//Controllers
+const getUserTime = (date = new Date()) => {
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
+//getUserSettings (data from Popup)
+
+//flow
+//Data needed...
+// prayer time (object) => data.timings,
+// Hijri Date => data.hijri.date,
+//Islamic Month =>data.month.en
+//Show City => user's Data => store in local storage
