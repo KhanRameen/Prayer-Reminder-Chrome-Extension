@@ -8,6 +8,7 @@ import { Label } from "./ui/label"
 import { Switch } from "./ui/switch"
 import { useForm } from "react-hook-form"
 import { Button } from "./ui/button"
+import { Key } from "lucide-react"
 
 
 
@@ -17,14 +18,14 @@ export const SelectLocation = () => {
     const [allCities, setAllCities] = useState<IState[]>([])
     const [selectedState, setSelectedState] = useState("")
 
-    const { handleSubmit, watch, setValue, } = useForm({
+    const { register, handleSubmit, watch, setValue, } = useForm({
         defaultValues: {
-            Country: "",
-            City: "",
-            CalculationMethod: "Muslim World League",
-            JuristicMethod: 0,
-            MidnightMode: false,
-            Tune: {
+            country: "",
+            city: "",
+            calculationMethod: "Muslim World League",
+            juristicMethod: 0,
+            midnightMode: false,
+            tune: {
                 Fajr: 0,
                 Duhr: 0,
                 Asr: 0,
@@ -35,6 +36,7 @@ export const SelectLocation = () => {
     })
 
     const countries = Country.getAllCountries()
+    const prayers = { Fajr: watch("tune.Fajr"), Duhr: watch("tune.Duhr"), Asr: watch("tune.Asr"), Maghrib: watch("tune.Maghrib"), Isha: watch("tune.Isha") }
 
     useEffect(() => {
         const states = State.getStatesOfCountry(selectedCountry)
@@ -42,6 +44,14 @@ export const SelectLocation = () => {
         setAllCities(states)
         console.log(selectedCountry)
     }, [selectedCountry])
+
+    //watch (all inputs)
+    const country = watch("country")
+    const city = watch("city")
+    const calculationMethod = watch("calculationMethod")
+    const juristicMethod = watch("juristicMethod")
+    const midnightMode = watch("midnightMode")
+
 
 
     const savePrayerSettings = (data){
@@ -100,12 +110,21 @@ export const SelectLocation = () => {
                 <Label htmlFor="midnightMode">Midnight Mode</Label>
 
             //tune - adjust prayer time
-
                 {/* To Do: Add tooltip*/}
+                <div className="flex gap-2">
+                    {Object.entries(prayers).map(([key, value]) => (
+                        <div key={key}>
+                            <div className="flex gap-1">
+                                <Button type="button" onClick={() => setValue(`tune.${key}`, value - 1)}> - </Button>
 
+                            </div>
+
+                        </div>
+                    ))}
+                </div>
                 {/* To Do: Add reminder Type */}
                 <Button type="submit">Save</Button>
-            </form>
+            </form >
         </div >
     )
 }
