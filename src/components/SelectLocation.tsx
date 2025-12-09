@@ -6,26 +6,37 @@ import { calculationMethods } from "./data/constants"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 import { Switch } from "./ui/switch"
-import { useForm } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { Button } from "./ui/button"
-import { Key } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
-
-
+type PrayerSettingsForm = {
+    Country: string,
+    City: string,
+    CalculationMethod: string,
+    JuristicMethod: string,
+    MidnightMode: boolean,
+    Tune: {
+        Fajr: number,
+        Duhr: number,
+        Asr: number,
+        Maghrib: number,
+        Isha: number
+    }
+}
 
 export const SelectLocation = () => {
-    const [selectedCountry, setSelectedCountry] = useState("x")
-    const [allCities, setAllCities] = useState<IState[]>([])
-    const [selectedState, setSelectedState] = useState("")
 
-    const { register, handleSubmit, watch, setValue, } = useForm({
+    const [allCities, setAllCities] = useState<IState[]>([])
+
+    const { control, handleSubmit, watch, setValue } = useForm<PrayerSettingsForm>({
         defaultValues: {
-            country: "",
-            city: "",
-            calculationMethod: "Muslim World League",
-            juristicMethod: 0,
-            midnightMode: false,
-            tune: {
+            Country: "",
+            City: "",
+            CalculationMethod: "Muslim World League",
+            JuristicMethod: "0",
+            MidnightMode: false,
+            Tune: {
                 Fajr: 0,
                 Duhr: 0,
                 Asr: 0,
@@ -36,96 +47,178 @@ export const SelectLocation = () => {
     })
 
     const countries = Country.getAllCountries()
-    const prayers = { Fajr: watch("tune.Fajr"), Duhr: watch("tune.Duhr"), Asr: watch("tune.Asr"), Maghrib: watch("tune.Maghrib"), Isha: watch("tune.Isha") }
 
-    useEffect(() => {
-        const states = State.getStatesOfCountry(selectedCountry)
 
-        setAllCities(states)
-        console.log(selectedCountry)
-    }, [selectedCountry])
 
     //watch (all inputs)
-    const country = watch("country")
-    const city = watch("city")
-    const calculationMethod = watch("calculationMethod")
-    const juristicMethod = watch("juristicMethod")
-    const midnightMode = watch("midnightMode")
+    const country = watch("Country")
+    // const city = watch("City")
+    // const calculationMethod = watch("CalculationMethod")
+    // const juristicMethod = watch("JuristicMethod")
+    // const midnightMode = watch("MidnightMode")
+    const tune = watch("Tune")
 
+    useEffect(() => {
+        let states = State.getStatesOfCountry(country)
+        if (!states) {
+            states = []
+        }
+        setAllCities(states!)
+    }, [country])
 
-
-    const savePrayerSettings = (data){
-
+    const savePrayerSettings = (data: PrayerSettingsForm) => {
+        console.log(data)
     }
+
     return (
-        <div>
-            <h3>Prayer Time Settings</h3>
-            <form onSubmit={handleSubmit(savePrayerSettings)}>
-            //country
-                <Select onValueChange={value => setSelectedCountry(value)} required>
-                    <SelectTrigger className="w-[280px]">
-                        <SelectValue placeholder="Select Your Country" />
-                    </SelectTrigger>
-                    <SelectContent className="h-[300px]">
-                        {countries.map((country) => (
-                            <SelectItem key={country.isoCode} value={country.isoCode}>{country.name}</SelectItem>
-                        )
-                        )}
-                    </SelectContent>
-                </Select>
+        <div className="w-full flex flex-col gap-y-4">
+            <h2>Prayer Time Settings</h2>
 
-            //city
-                <Select disabled={!selectedCountry && !allCities}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Your City" />
-                    </SelectTrigger>
-                    <SelectContent >
-                        {allCities.length === 0 ?
-                            <SelectItem value={selectedCountry}> {selectedCountry} </SelectItem>
-                            : allCities.map(city => <SelectItem key={city.isoCode} value={city.name}>
-                                {city.name}
-                            </SelectItem>)}
-                    </SelectContent>
-                </Select>
+            <form onSubmit={handleSubmit(savePrayerSettings)} className="space-y-4">
 
-            //prayer calculation method
-                <Select defaultValue={"Muslim World League"}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Muslim World League" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {calculationMethods.map((method, index) => <SelectItem key={index} value={index.toString()}> {method}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                <Label>Country</Label>
+                <Controller
+                    name="Country"
+                    control={control}
+                    render={({ field }) => (
 
-                <RadioGroup className="flex gap-2">
-                    <RadioGroupItem value="0" id="0" />
-                    <Label htmlFor="0">Shafi</Label>
-                    <RadioGroupItem value="1" id="1" />
-                    <Label htmlFor="1">Hanafi (Later Asr)</Label>
-                </RadioGroup>
+                        <Select onValueChange={field.onChange} value={field.value} required>
+                            <SelectTrigger className="w-[280px]">
+                                <SelectValue placeholder="Select Your Country" />
+                            </SelectTrigger>
+                            <SelectContent className="h-[300px] ">
+                                {countries.filter(Boolean).map((country) => (country &&
+                                    <SelectItem key={country.isoCode} value={country.isoCode}>{country!.name}</SelectItem>
+                                )
+                                )}
+                            </SelectContent>
+                        </Select>
+                    )} />
 
-            //midnightMode switch - add tooltip
-                <Switch id="midnightMode" />
-                <Label htmlFor="midnightMode">Midnight Mode</Label>
 
-            //tune - adjust prayer time
-                {/* To Do: Add tooltip*/}
-                <div className="flex gap-2">
-                    {Object.entries(prayers).map(([key, value]) => (
-                        <div key={key}>
-                            <div className="flex gap-1">
-                                <Button type="button" onClick={() => setValue(`tune.${key}`, value - 1)}> - </Button>
+                <Label>City</Label>
+                <Controller
+                    name="City"
+                    control={control}
+                    render={({ field }) => (
 
-                            </div>
+                        <Select disabled={!country} onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Your City" />
+                            </SelectTrigger>
+                            <SelectContent >
+                                {
+                                    (allCities.length === 0 && country) ?
+                                        <SelectItem value={country!}>{country!}</SelectItem>
+                                        : allCities.filter(Boolean).map(city =>
+                                            <SelectItem key={city!.isoCode} value={city!.name}>
+                                                {city!.name}
+                                            </SelectItem>
+                                        )
+                                }
+                            </SelectContent>
+                        </Select>
 
+                    )}
+                />
+
+
+                <Label>Calculation Method</Label>
+                <Controller
+                    name="CalculationMethod"
+                    control={control}
+                    render={({ field }) => (
+
+                        <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a Calculation Method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {calculationMethods.map((method, index) => <SelectItem key={index} value={method}> {method}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )} />
+
+
+                <Label>Juristic Method / School</Label>
+                <Controller
+                    name="JuristicMethod"
+                    control={control}
+                    render={({ field }) => (
+                        <RadioGroup className="flex gap-2" value={field.value} onValueChange={field.onChange}>
+                            <RadioGroupItem value="0" id="0" />
+                            <Label htmlFor="0">Shafi</Label>
+                            <RadioGroupItem value="1" id="1" />
+                            <Label htmlFor="1">Hanafi (Later Asr)</Label>
+                        </RadioGroup>
+                    )} />
+
+
+                <Controller
+                    name="MidnightMode"
+                    control={control}
+                    defaultValue={false}
+                    render={({ field }) => (
+                        <div className="flex items-center gap-3">
+                            <Label htmlFor="midnightMode">Midnight Mode</Label>
+                            <Switch
+                                id="midnightMode"
+                                checked={field.value}
+                                onCheckedChange={field.onChange} />
                         </div>
+                    )} />
+
+
+
+                {/* To Do: Add tooltip*/}
+                <Label> Adjust prayer time</Label>
+
+
+                <div className="flex gap-2">
+                    {Object.keys(tune).map(prayer => (
+                        <Controller
+                            key={prayer}
+                            name={`Tune.${prayer}`}
+                            control={control}
+                            render={({ field }) => (
+
+                                <div className="m-1 bg-amber-50/10">
+                                    <strong> {prayer} </strong>
+                                    <div className="flex">
+
+                                        <input type="number" max={30} min={-15} {...field} className="border text-center" />
+
+                                        <div className="flex flex-col">
+
+                                            <Button
+                                                size={"xs"}
+                                                type="button"
+                                                variant={"ghost"}
+                                                disabled={(field.value) >= 30 ? true : false}
+                                                onClick={() => { setValue(`Tune.${prayer}`, field.value + 1) }}>
+                                                <ChevronUp></ChevronUp>
+                                            </Button>
+
+                                            <Button
+                                                size={"xs"}
+                                                type="button"
+                                                variant={"ghost"}
+                                                disabled={(field.value) <= -15 ? true : false}
+                                                onClick={() => { setValue(`Tune.${prayer}`, field.value - 1) }}>
+                                                <ChevronDown></ChevronDown>
+                                            </Button>
+
+                                        </div>
+                                    </div>
+                                </div>)} />
+
                     ))}
                 </div>
-                {/* To Do: Add reminder Type */}
                 <Button type="submit">Save</Button>
             </form >
         </div >
     )
 }
 
+//todo: add tool tip
+// {/* To Do: Add reminder Type */}
