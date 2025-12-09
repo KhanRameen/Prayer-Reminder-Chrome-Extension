@@ -13,21 +13,15 @@ export default function Popup() {
     // }
 
     return (
-        <div className="w-80 min-h-100 bg-amber-100 p-4">
-            <h1 className="text-lg font-bold mb-4">Prayer Notification</h1>
-            {/* <form onSubmit={submitData} className="w-full"> */}
-            {/* <input type="text" placeholder="Country"></input> */}
-            {/* <input type="text" placeholder="City"></input>
-                <input type="number" placeholder="Method"></input>
-                <label > School
-                </label>
-                <input type="radio" value={0}>Shafi</input>
-                <input type="radio" value={1}>Hanafi</input>
-                <button type="submit"></button> */}
-            {/* </form> */}
-            <SelectLocation />
+        <div className="w-110 h-140 p-4 bg-[url('/background.svg')] bg-cover bg-center">
+            <div className="m-0.5 bg-white/15 p-3 rounded-sm">
+
+                <h1 className="text-lg font-bold mb-4">Prayer Notification</h1>
+                <SelectLocation />
+            </div>
 
         </div>
     );
 };
+//todo: add a name to the extention
 
