@@ -25,3 +25,11 @@ export default function Popup() {
 };
 //todo: add a name to the extention
 
+
+
+//flow
+//Data needed...
+// prayer time (object) => data.timings,
+// Hijri Date => data.hijri.date,
+//Islamic Month =>data.month.en
+//Show City => user's Data => store in local storage
