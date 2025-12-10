@@ -1,10 +1,10 @@
-import { getAllCountries } from "../controllers/Location";
+import type { PrayerSettingsForm } from "@/components/types/types";
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("Extention Installed!");
+  chrome.alarms.create("refreshPrayerData", {
+    periodInMinutes: 6 * 60,
+  });
 });
-
-getAllCountries();
 
 //API Calls
 chrome.alarms.create("getPrayerTime", { periodInMinutes: 0.1 });
@@ -20,10 +20,15 @@ chrome.alarms.create("getPrayerTime", { periodInMinutes: 0.1 });
 const getPrayerTime = async () => {
   try {
     console.log("getting prayer time");
-    console.log("Date", Date.now().toString());
+    
+    //get data from local storage
+    chrome.storage.local.get(["prayerSettings"],({data})=>{
+      
+    })
+    const date= formatedDate()
 
     const res = await fetch(
-      "https://api.aladhan.com/v1/timingsByCity/15-11-2025?city=Karachi&country=PK&state=Karachi&method=3&shafaq=general&tune=5%2C3%2C5%2C7%2C9%2C-1%2C0%2C8%2C-6&school=1&timezonestring=UTC&calendarMethod=UAQ"
+      `https://api.aladhan.com/v1/timingsByCity/${date}?city=${data.}&country=PK&state=Karachi&method=3&shafaq=general&tune=5%2C3%2C5%2C7%2C9%2C-1%2C0%2C8%2C-6&school=1&timezonestring=UTC&calendarMethod=UAQ`
     );
 
     const data = await res.json();
@@ -45,11 +50,53 @@ const getUserTime = (date = new Date()) => {
   });
 };
 
-//getUserSettings (data from Popup)
+const formatedDate = (date= new Date())=>{
+    const day = date.getDay().toString().padStart(2,"0")
+    const month = (date.getMonth()+1).toString().padStart(2,"0")
+    const year= date.getFullYear();
 
-//flow
-//Data needed...
-// prayer time (object) => data.timings,
-// Hijri Date => data.hijri.date,
-//Islamic Month =>data.month.en
-//Show City => user's Data => store in local storage
+    return `${day}-${month}-${year}`
+}
+
+
+const scheduleNextMidnight = () => {
+  const now = new Date();
+  const next = new Date();
+
+  next.setHours(24, 0, 0, 0);
+
+  const minutesTillMidnight = (next - now) / 1000 / 60;
+
+  chrome.alarms.create("midnightUpdate"{
+    when: Date.now() + minutesTillMidnight * 60 * 1000 
+  });
+};
+
+//eventListener
+chrome.runtime.onMessage.addListener(async(message, sender, sendResonse) => {
+  //getUserSettings (data from Popup)
+  if (message.type === "prayerSettings") {
+    const data = JSON.stringify(message.data);
+
+    await chrome.storage.local.set({prayerSettings:data})
+    //store response in storage
+
+    //call API
+    
+    //then store/set data in local storage
+    
+    //handle error
+  }
+});
+
+
+//alarmListener
+chrome.alarms.onAlarm.addListener(async(alarm)=>{
+  if(alarm.name==="midnightUpdate"){
+    //Todo:call api to update prayer data
+    scheduleNextMidnight() 
+  }
+})
+
+
+

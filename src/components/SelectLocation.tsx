@@ -9,21 +9,8 @@ import { Switch } from "./ui/switch"
 import { Controller, useForm } from "react-hook-form"
 import { Button } from "./ui/button"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import type { PrayerSettingsForm } from "./types/types"
 
-type PrayerSettingsForm = {
-    Country: string,
-    City: string,
-    CalculationMethod: string,
-    JuristicMethod: string,
-    MidnightMode: boolean,
-    Tune: {
-        Fajr: number,
-        Duhr: number,
-        Asr: number,
-        Maghrib: number,
-        Isha: number
-    }
-}
 
 export const SelectLocation = () => {
 
@@ -68,6 +55,10 @@ export const SelectLocation = () => {
 
     const savePrayerSettings = (data: PrayerSettingsForm) => {
         console.log(data)
+        chrome.runtime.sendMessage(
+            { type: "prayerSettings", data },
+            (response) => { console.log("Background Acknowledged", response) }
+        )
     }
 
     return (
