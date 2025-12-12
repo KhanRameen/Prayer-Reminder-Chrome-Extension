@@ -2,8 +2,8 @@ export type PrayerSettingsForm = {
   Country: string;
   City: string;
   CalculationMethod: string;
-  JuristicMethod: string;
-  MidnightMode: boolean;
+  JuristicMethod: "0" | "1";
+  MidnightMode: "0" | "1";
   Tune: {
     Fajr: number;
     Duhr: number;
