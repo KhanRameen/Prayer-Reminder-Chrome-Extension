@@ -20,9 +20,9 @@ export const SelectLocation = () => {
         defaultValues: {
             Country: "",
             City: "",
-            CalculationMethod: "Muslim World League",
+            CalculationMethod: "3",
             JuristicMethod: "0",
-            MidnightMode: false,
+            MidnightMode: "0",
             Tune: {
                 Fajr: 0,
                 Duhr: 0,
@@ -53,10 +53,11 @@ export const SelectLocation = () => {
         setAllCities(states!)
     }, [country])
 
-    const savePrayerSettings = (data: PrayerSettingsForm) => {
+    const savePrayerSettings = async (data: PrayerSettingsForm) => {
         console.log(data)
+        await chrome.storage.local.set({ prayerSettings: data })
         chrome.runtime.sendMessage(
-            { type: "prayerSettings", data },
+            { type: "prayerSettingsStored" },
             (response) => { console.log("Background Acknowledged", response) }
         )
     }
@@ -118,14 +119,15 @@ export const SelectLocation = () => {
                 <Controller
                     name="CalculationMethod"
                     control={control}
+                    defaultValue="3"
                     render={({ field }) => (
 
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select value={field.value} onValueChange={val => field.onChange(val)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a Calculation Method" />
                             </SelectTrigger>
                             <SelectContent>
-                                {calculationMethods.map((method, index) => <SelectItem key={index} value={method}> {method}</SelectItem>)}
+                                {calculationMethods.map((method, index) => <SelectItem key={index} value={index.toString()}> {method}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )} />
@@ -148,14 +150,16 @@ export const SelectLocation = () => {
                 <Controller
                     name="MidnightMode"
                     control={control}
-                    defaultValue={false}
+                    defaultValue={"0"}
                     render={({ field }) => (
                         <div className="flex items-center gap-3">
                             <Label htmlFor="midnightMode">Midnight Mode</Label>
                             <Switch
                                 id="midnightMode"
-                                checked={field.value}
-                                onCheckedChange={field.onChange} />
+                                checked={field.value === "1"}
+                                onCheckedChange={(checked) => {
+                                    field.onChange(checked ? "1" : "0");  // turn boolean back into string
+                                }} />
                         </div>
                     )} />
 

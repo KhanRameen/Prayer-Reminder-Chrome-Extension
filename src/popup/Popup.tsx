@@ -1,23 +1,42 @@
+import { useEffect, useState } from "react";
 import { SelectLocation } from "../components/SelectLocation";
 
 export default function Popup() {
+    const [mainScreen, setMainScreen] = useState(false)
+    const [data, setData] = useState("")
 
-    // const changeColor = async () => {
-    //     console.log("Sending message to content.js");
-    //     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    //     if (!tab?.id || tab.url?.startsWith("chrome://")) return
-    //     chrome.tabs.sendMessage(tab.id, { action: "changeColor" });
-    // };
-    // const submitData = async () => {
 
-    // }
+
+    useEffect(() => {
+        chrome.storage.local.get("prayerSettings", (res) => {
+            if (!res.prayerSettings) {
+                setMainScreen(false)
+            }
+            else {
+                setMainScreen(true)
+            }
+
+        })
+
+    }, [])
+
+    useEffect(() => {
+        chrome.storage.local.get(["apiResult", "apiError"], ({ apiResult, apiError }) => {
+            if (apiError) {
+                setData("no")
+            }
+            setData("data")
+
+        })
+    }, [mainScreen])
+
 
     return (
         <div className="w-110 h-140 p-4 bg-[url('/background.svg')] bg-cover bg-center">
             <div className="m-0.5 bg-white/15 p-3 rounded-sm">
 
                 <h1 className="text-lg font-bold mb-4">Prayer Notification</h1>
-                <SelectLocation />
+                {!mainScreen ? <SelectLocation /> : <> {data}</>}
             </div>
 
         </div>
