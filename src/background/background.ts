@@ -2,7 +2,7 @@ import type { PrayerSettingsForm } from "@/components/types/types";
 
 //alarms
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.clear()
+  // chrome.storage.local.clear()
   scheduleNextMidnight();
 });
 

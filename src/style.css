@@ -1,9 +1,36 @@
 @import "tailwindcss";
 /* @import "tw-animate-css"; */
 
+
+@font-face {
+  font-family: "Numans";
+  src: url('fonts/Numans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Prompt";
+  src: url('https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+  /* font-weight: 100, 200, 300, 400, 500, 600, 700, 800, 900, ; */
+  font-style: normal;
+}
+
+
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-prompt: "Prompt", sans-serif;
+  --font-figtree: "Figtree", sans-serif;
+  --font-numans: 'Numans', sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -75,6 +102,9 @@
 }
 
 @theme inline {
+  --font-prompt: var(--font-prompt);
+  --font-figtree: var(--font-figtree);
+  --font-numans: var(--font-numans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -120,6 +150,10 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Numans', sans-serif;
+    font-family: 'Figtree', sans-serif;
+    font-family: "Prompt", sans-serif;
+
   }
 }
 
@@ -133,3 +167,5 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+@tailwind utilities
