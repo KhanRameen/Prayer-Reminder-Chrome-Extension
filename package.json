@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "ription": "",
   "devDependencies": {
     "@types/chrome": "^0.1.28",
     "@types/node": "^24.10.1",
