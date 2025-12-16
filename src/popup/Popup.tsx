@@ -34,8 +34,8 @@ export default function Popup() {
         <div className="w-110 h-140 p-4 bg-[url('/background.svg')] bg-cover bg-center">
             <div className="m-0.5 bg-white/15 p-3 rounded-sm h-full">
                 {/* todo: maintain state/ find a way to show main screen when you hit save.. currently not showing */}
-                {/* {!mainScreen ? <SelectLocation /> : <> <MainScreen /></>} */}
-                <MainScreen />
+                {!mainScreen ? <SelectLocation /> : <> <MainScreen /></>}
+                {/* <MainScreen /> */}
             </div>
 
         </div>
