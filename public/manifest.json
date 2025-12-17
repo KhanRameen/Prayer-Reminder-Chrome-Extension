@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Prayer Reminder",
   "version": "1.0.0",
-  "ription": "Testing extention using TS",
+  "description": "Prayer Reminder Extention",
   "action": {
     "default_popup": "src/popup.html",
     "default_icon": "icons/pirate-parrot.png"
