@@ -1,6 +1,3 @@
-//onInstall || onStartup=> get yes,today,tmr data
-//onEveryMidnigt => get only tomr data, update prev tmr data to today, today data to yesterday and add new tmr data
-
 import type { PrayerSettingsForm } from "@/components/types/types";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -55,10 +52,15 @@ const getPrayerData = async () => {
       tomorrow.setDate(today.getDate() + 1);
       yesterday.setDate(today.getDate() - 1);
 
+      const dateToday=formatDate(today)
+      const dateTomorrow=formatDate(tomorrow)
+      const dateYesterday=formatDate(yesterday)
+      
+
       const [y,t,tm]=await Promise.all([
-        fetchPrayerAPI(formData,formatDate(yesterday)),
-        fetchPrayerAPI(formData,formatDate(today)),
-        fetchPrayerAPI(formData,formatDate(tomorrow))
+        fetchPrayerAPI(formData,dateYesterday),
+        fetchPrayerAPI(formData,dateToday),
+        fetchPrayerAPI(formData,dateTomorrow)
       ])
 
       if(!y && !t && !tm){
@@ -108,8 +110,10 @@ const fetchPrayerAPI = async (formData:PrayerSettingsForm, date:string) => {
 
 const ensurePrayerData = async () => {
   const { prayerData } = await chrome.storage.local.get("apiResult");
+  console.log("EnsurePrayer Data")
   const today = formatDate();
   if (!prayerData || prayerData.today.date.gregorian.date != today) {
+    console.log("EnsurePrayer Data Failed")
     await getPrayerData();
     scheduleNextMidnight();
   }

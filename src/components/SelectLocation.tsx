@@ -18,7 +18,10 @@ export const SelectLocation = () => {
 
     const { control, handleSubmit, watch, setValue } = useForm<PrayerSettingsForm>({
         defaultValues: {
-            Country: "",
+            Country: {
+                isoCode: "",
+                name: ""
+            },
             City: "",
             CalculationMethod: "3",
             JuristicMethod: "0",
@@ -46,12 +49,14 @@ export const SelectLocation = () => {
     const tune = watch("Tune")
 
     useEffect(() => {
-        let states = State.getStatesOfCountry(country)
+        console.log("isnide settings useEffect")
+        let states = State.getStatesOfCountry(country.isoCode)
         if (!states) {
             states = []
+
         }
         setAllCities(states!)
-    }, [country])
+    }, [country?.isoCode])
 
     const savePrayerSettings = async (data: PrayerSettingsForm) => {
         console.log(data)
@@ -73,14 +78,22 @@ export const SelectLocation = () => {
                     name="Country"
                     control={control}
                     render={({ field }) => (
-
-                        <Select onValueChange={field.onChange} value={field.value} required>
+                        <Select
+                            onValueChange={(isoCode) => {
+                                console.log("on value change country")
+                                const selected = countries.find((c) => c?.isoCode === isoCode)
+                                field.onChange({ isoCode, name: selected?.name ?? "" })
+                            }}
+                            value={field.value?.isoCode} required>
                             <SelectTrigger className="w-[280px]">
-                                <SelectValue placeholder="Select Your Country" />
+                                <SelectValue> {field.value?.name ?? "Select Your Country"}</SelectValue>
                             </SelectTrigger>
-                            <SelectContent className="h-[300px] ">
+                            <SelectContent className="h-[300px]">
                                 {countries.filter(Boolean).map((country) => (country &&
-                                    <SelectItem key={country.isoCode} value={country.isoCode}>{country!.name}</SelectItem>
+                                    <SelectItem
+                                        key={country.isoCode}
+                                        value={country.isoCode}>{country!.name}
+                                    </SelectItem>
                                 )
                                 )}
                             </SelectContent>
@@ -100,8 +113,8 @@ export const SelectLocation = () => {
                             </SelectTrigger>
                             <SelectContent >
                                 {
-                                    (allCities.length === 0 && country) ?
-                                        <SelectItem value={country!}>{country!}</SelectItem>
+                                    (allCities.length === 0 && country.isoCode) ?
+                                        <SelectItem value={country!.isoCode}>{country!.name}</SelectItem>
                                         : allCities.filter(Boolean).map(city =>
                                             <SelectItem key={city!.isoCode} value={city!.name}>
                                                 {city!.name}

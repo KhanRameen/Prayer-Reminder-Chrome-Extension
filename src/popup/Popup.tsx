@@ -6,9 +6,8 @@ export default function Popup() {
     const [mainScreen, setMainScreen] = useState(false)
     const [data, setData] = useState("")
 
-
-
     useEffect(() => {
+        console.log("popup prayer setting use effect")
         chrome.storage.local.get("prayerSettings", (res) => {
             if (!res.prayerSettings) {
                 setMainScreen(false)
@@ -20,6 +19,7 @@ export default function Popup() {
     }, [])
 
     useEffect(() => {
+        console.log("popup api use effect")
         chrome.storage.local.get(["apiResult", "apiError"], ({ apiResult, apiError }) => {
             if (apiError) {
                 setData("no")
