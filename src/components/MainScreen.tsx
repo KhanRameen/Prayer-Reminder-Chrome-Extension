@@ -1,6 +1,7 @@
-import { Settings } from "lucide-react"
+import { EllipsisVertical } from "lucide-react"
 import { AsrIcon, DhuhrIcon, FajrIcon, IshaIcon, LocationIcon, MaghribIcon, SunriseIcon } from "./ui/Icons"
 import { useEffect, useState } from "react"
+
 
 const AllPrayersDisplay = [
     {
@@ -31,66 +32,138 @@ const AllPrayersDisplay = [
 ]
 
 
-const getCurrentAndNextPrayerTime = (prayerTimes) => {
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
-
+const getPrayerTimeline = (data) => {
+    const list = [];
     const skipList = ["Firstthird", "Imsak", "Lastthird", "Midnight", "Sunset"]
 
-    const unsortedlist = Object.entries(prayerTimes).filter(([name, time]) => !skipList.includes(name)).map(([name, time]) => {
-        const [hour, minute]: [number, number] = time.split(":").map(Number)
-        return {
-            name, time, minute: hour * 60 + minute
-        }
-    })
-
-    const list = [...unsortedlist].sort((prayerA, prayerB) => prayerA.minute - prayerB.minute)
-
-    console.log(list)
-
-    let currentPrayerName = ""
-    let currentPrayerTime = ""
-    let currentPrayerTimeInMinutes = 0
-    let nextPrayerName = ""
-    let nextPrayerTime = 0
-
-    for (const prayer of list) {
-        if (currentMinutes >= prayer.minute) {
-            currentPrayerName = prayer.name
-            currentPrayerTimeInMinutes = prayer.minute
-            currentPrayerTime = prayer.time.toString()
-            continue
-        }
-        if (currentPrayerTime && currentPrayerTimeInMinutes < prayer.minute) {
-            nextPrayerName = prayer.name
-            nextPrayerTime = prayer.minute - currentMinutes
-            break
-        }
+    function add(dayOffset, name, time) {
+        const [h, m] = time.split(':').map(Number)
+        const d = new Date();
+        d.setDate(d.getDate() + dayOffset)
+        d.setHours(h, m, 0, 0)
+        list.push({ name, date: d })
+        console.log("list push", { name, d })
     }
 
-    return { currentPrayerName, currentPrayerTime, nextPrayerName, nextPrayerTime }
+    if (data.yesterdayIsha) {
+        add(-1, "Isha", data.yesterdayIsha)
+        console.log("yesterday Isha")
+    }
+
+    Object.entries(data.today.timings).filter(([name, time]) => !skipList.includes(name)).forEach(([name, time]) => {
+        add(0, name, time)
+        console.log("todays ", name, time)
+    })
+
+    if (data.tomorrowsFajr) {
+        add(1, "Fajr", data.tomorrowsFajr)
+        console.log("tmrs Fajr")
+    }
+
+    return list.sort((a, b) => a.date - b.date)
+
 }
+
+const getCurrentAndNextPrayerTime = (timeline) => {
+    console.log("Inside current Next, timeline param:", timeline)
+    const now = new Date();
+    console.log("NOW:", now)
+
+    console.log("getting current and next prayers")
+
+    let current = null
+    let next = null
+
+    for (let i = 0; i < timeline.length; i++) {
+        if (timeline[i].date <= now) {
+            current = timeline[i];
+            next = timeline[i + 1] || null
+        }
+        console.log("looping")
+    }
+
+    //after midnight update
+    if (!current) {
+        current = timeline[0]
+        next = timeline[1] || null
+        console.log("midnights case")
+    }
+
+
+    return { current, next }
+
+}
+
+
+const getTimeLeft = (targetDate): string => {
+    console.log("getting time left")
+    const diff = targetDate - new Date()
+    const totalMinutes = Math.ceil(diff / 60000)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60;
+
+
+    if (hours > 0 && minutes > 0) {
+        return `${hours} hour${hours > 1 ? "s" : ""} ${minutes} minute${minutes > 1 ? "s" : ""}`
+    }
+
+    if (hours > 0) {
+        return `${hours} hour${hours > 1 ? "s" : ""}`
+    }
+
+    return `${minutes} minute${minutes > 1 ? "s" : ""}`
+
+}
+
+const getTimeFormated = (date: Date) => {
+    return String(date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    }));
+};
+
+
 
 
 export const MainScreen = () => {
     const [data, setData] = useState(null)
-    const [prayerTime, setPrayerTime] = useState({
-        currentPrayerName: "", currentPrayerTime: undefined, nextPrayerName: "", nextPrayerTime: 0
-    })
+    const [currentPrayer, setCurrentPrayer] = useState<{ name: string, date: Date }>()
+    const [nextPrayer, setNextPrayer] = useState<{ name: string, date: Date }>()
+    const [timeLeft, setTimeLeft] = useState<string>()
+    const [location, setLocation] = useState({ city: "", country: "" })
 
     useEffect(() => {
+        console.log("main useEffect")
         chrome.storage.local.get(["apiResult"], (res) => {
-            if (res.apiResult) {
-                setData(res.apiResult)
-                const { currentPrayerName, currentPrayerTime, nextPrayerName, nextPrayerTime } = getCurrentAndNextPrayerTime(res.apiResult.timings)
-                setPrayerTime({
-                    currentPrayerName, currentPrayerTime, nextPrayerName, nextPrayerTime
-                })
-
+            if (!res.apiResult) {
+                return
             }
+            console.log("apiresult on frontend")
+
+            setData(res.apiResult.today)
+            const timeline = getPrayerTimeline(res.apiResult)
+            const { current, next } = getCurrentAndNextPrayerTime(timeline)
+            console.log("got the timelie", { current, next })
+
+            setCurrentPrayer(current)
+            setNextPrayer(next)
+
+            setTimeLeft(() => getTimeLeft(next?.date!))
+
+
+        })
+
+        chrome.storage.local.get("prayerSettings", ({ prayerSettings }) => {
+            const country = prayerSettings.Country.name
+            const city = prayerSettings.City
+
+            setLocation({ city, country })
         })
     }, [])
 
+    // const timeLeftText = getTimeLeft(nextPrayer?.date)
+    // setTimeLeft(timeLeftText)
 
 
     return (
@@ -99,39 +172,47 @@ export const MainScreen = () => {
                 <div className="grid grid-cols-2 mb-20">
                     <div className="flex gap-x-1.5">
                         <LocationIcon />
-                        <p className="font-numans">Karachi, Pakistan</p>
+                        <p className="font-numans">{location.city}, {location.country}</p>
                     </div>
-                    <div className="flex justify-end"><Settings className="stroke-1 size-5 bg-3A3843 shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer" /></div>
+                    <div className="flex justify-end">
+                        <EllipsisVertical className="stroke-1 size-5 bg-3A3843 hover:scale-110 transition-transform duration-200 cursor-pointer" />
+                    </div>
                 </div>
 
-                <div className="flex flex-col justify-center text-center gap-y-0">
+                <div className="p-5 flex flex-col justify-center text-center gap-y-0">
                     <p
                         className="font-numans">
-                        {data.date.hijri.month.en}, {data.date.hijri.month.number}, {data.date.hijri.year} {data.date.hijri.designation.abbreviated}
+                        {data.date.hijri.month.en}, {data.date.hijri.day}, {data.date.hijri.year} {data.date.hijri.designation.abbreviated}
                     </p>
-                    <span
-                        className="font-figtree text-[62px] text-white text-shadow-[0_4px_12px_rgba(0,0,0,0.2)] m-0">
-                        {prayerTime.currentPrayerTime}
-                    </span>
-                    <span
-                        className="font-prompt font-bold text-[32px] text-[#1D596D]">
-                        {prayerTime.currentPrayerName.toUpperCase()}
-                    </span>
-                    <p
-                        className="font-numans text-sm">
-                        {prayerTime.nextPrayerTime} min left in {prayerTime.nextPrayerName}
-                    </p>
+                    {currentPrayer &&
+                        <div className="relative flex flex-col items-center ">
+                            <span
+                                className="max-h-20 font-figtree text-[62px] text-white text-shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+                                {getTimeFormated(currentPrayer?.date)}
+                            </span>
+                            <span
+                                className="font-prompt font-bold text-[32px] text-[#1D596D]">
+                                {currentPrayer?.name?.toUpperCase()}
+                            </span>
+                        </div>
+                    }
+                    {nextPrayer &&
+                        <p
+                            className="font-numans text-sm">
+                            {timeLeft} left in {nextPrayer?.name}
+                        </p>
+                    }
                 </div>
 
-                <div className="p-5 mt-10 justify-center">
+                <div className="p-3 mt-8 justify-center">
                     <div className="grid grid-cols-6 gap-x-1 justify-around">
                         {AllPrayersDisplay.map(({ timingKey, Icon }) => {
                             const time = data?.timings?.[timingKey]
-                            if (!time || !Icon) return null;
+                            // if (!time || !Icon) return null;
 
                             return (
-                                <div key={timingKey} className="flex flex-col items-center">
-                                    <Icon />
+                                <div key={timingKey} className="h-10 flex flex-col items-center">
+                                    <div className="align-middle items-center h-5"><Icon /></div>
                                     <p className="font-prompt font-medium py-1">{timingKey}</p>
                                     <p className="font-numans ">{time}</p>
                                 </div>
