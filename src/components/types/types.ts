@@ -1,5 +1,8 @@
 export type PrayerSettingsForm = {
-  Country: string;
+  Country: {
+    isoCode: string;
+    name: string;
+  };
   City: string;
   CalculationMethod: string;
   JuristicMethod: "0" | "1";
