@@ -5,7 +5,7 @@
   "description": "Prayer Reminder Extention",
   "action": {
     "default_popup": "src/popup.html",
-    "default_icon": "icons/pirate-parrot.png"
+    "default_icon": "icons/masjid-icon.png"
   },
   "background": {
     "service_worker": "./background.js",
