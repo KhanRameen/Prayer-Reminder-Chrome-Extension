@@ -1,7 +1,7 @@
-import { Country, State } from "country-state-city"
+import { City, Country, State } from "country-state-city"
 import { Select, SelectItem, SelectTrigger, SelectContent, SelectValue } from "@/components/ui/select"
 import { useEffect, useState } from "react"
-import type { IState } from 'country-state-city'
+import type { ICity, IState } from 'country-state-city'
 import { calculationMethods } from "./data/constants"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
@@ -14,7 +14,7 @@ import type { PrayerSettingsForm } from "./types/types"
 
 export const SelectLocation = () => {
 
-    const [allCities, setAllCities] = useState<IState[]>([])
+    const [allCities, setAllCities] = useState<ICity[]>([])
 
     const { control, handleSubmit, watch, setValue } = useForm<PrayerSettingsForm>({
         defaultValues: {
@@ -50,12 +50,12 @@ export const SelectLocation = () => {
 
     useEffect(() => {
         console.log("isnide settings useEffect")
-        let states = State.getStatesOfCountry(country.isoCode)
-        if (!states) {
-            states = []
+        let cities = City.getCitiesOfCountry(country.isoCode)
+        if (!cities) {
+            cities = []
 
         }
-        setAllCities(states!)
+        setAllCities(cities!)
     }, [country?.isoCode])
 
     const savePrayerSettings = async (data: PrayerSettingsForm) => {
