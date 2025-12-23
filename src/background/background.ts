@@ -144,3 +144,83 @@ const scheduleNextMidnight = () => {
   });
 };
 
+// const schedulePrayerAlarms= ()=>{
+//   buildPrayerTimelineforAlarm()
+//   const now=Date.now()
+  
+//   chrome.storage.local.get("prayerNotificationList", ({prayerNotificationList})=>{
+//     prayerNotificationList.forEach(({name,time,nextPrayerTime})=>{
+//       if(time<=now) return;
+//       const alarmName=`prayer-${name}-${when}`
+//       chrome.alarms.create(alarmName,{when:time})
+
+//     })
+//   })
+
+// }
+
+const buildPrayerTimelineforAlarm=()=>{
+  const prayerList= chrome.storage.local.get("apiresult", ({apiResult})=> {
+
+    const skipList = ["Firstthird", "Sunrise", "Imsak", "Lastthird", "Midnight", "Sunset"]
+    const date=apiResult.today.date.gregorian.date
+
+    const prayersToday = [{name:"",time:number}]     
+    Object.entries(apiResult.today.timings).filter(([name, time]) => !skipList.includes(name)).forEach(([name, time]) => {
+        time = buildTimestamps(date, time)
+        prayersToday.push({ name, time })
+    }) //Array
+
+    prayersToday.sort((a, b) => Number(a.time) - Number(b.time))
+
+
+    const tomorrowsFajr=apiResult.tomorrowsFajr //time
+
+    const prayerlist = [];
+
+    //create the list
+    for (let i = 0; i < prayersToday.length; i++) {
+        console.log("Looping")
+        if (i === prayersToday.length - 1) {
+            console.log("if Case")
+            const { name, time } = prayersToday[i]
+            // const prayerTime = buildTimestamps(date, time)
+            const nextPrayerTime = buildTimestamps(date, tomorrowsFajr)
+            prayerlist.push({
+                name,
+                time,
+                nextPrayerTime
+            })
+        }
+        else {
+            console.log("else case")
+            const { name, time } = prayersToday[i]
+            const { next, time: nextPrayerTime } = prayersToday[i + 1]
+            prayerlist.push({
+                name,
+                time,
+                nextPrayerTime
+            })
+
+        }
+      }
+      chrome.storage.local.set({prayerNotificationList:prayerList})           
+  })
+  
+}
+
+const buildTimestamps= (date:string,time:string):number=> {
+   const [day, month, year] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    hours,
+    minutes,
+    0,
+    0
+  ).getTime();
+}
+
