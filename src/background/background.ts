@@ -4,7 +4,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // chrome.storage.local.clear()
   // chrome.alarms.clearAll();
   ensurePrayerData();
-  scheduleNextMidnight();
+
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -17,6 +17,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResonse) => {
   if (message.type === "prayerSettingsStored") {
     //call API
     await getPrayerData();
+    schedulePrayerAlarms()
     //todo: send response
     return true;
   }
@@ -26,9 +27,58 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResonse) => {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "midnightUpdate") {
     await getPrayerData();
+    schedulePrayerAlarms();
     scheduleNextMidnight();
   }
+
+  if(alarm.name.startsWith("prayer-")){
+    const [,name,nextAlarmTime]=alarm.name.split("-").map(String)
+    showPrayerNotification(name,nextAlarmTime)
+  }
+
+  if(alarm.name.startsWith("snooze-")){
+    const [,name,nextPrayerTime]=alarm.name.split("-").map(String)
+
+    const allowSnooze=canSnooze(Number(nextPrayerTime))
+
+    const options: chrome.notifications.NotificationCreateOptions= {
+    type: "basic" as const ,
+    iconUrl:"icons/masjid-icon.png",
+    title:`${name} Prayer Reminder`,
+    message:`You Snoozed ${name} prayer.`,
+    priority:2
+  }
+
+  if(allowSnooze){
+    options.buttons=[
+      {title:"Snooze 15 min"}
+    ]
+  }
+
+  chrome.notifications.create(alarm.name,options)
+  }
+
+  
 });
+
+
+
+//notificaitonListener
+chrome.notifications.onButtonClicked.addListener(
+  async(notificationId,buttonIndex)=>{
+    if(buttonIndex!==0)return ;
+    
+    if(notificationId.startsWith("notify-")){
+      const [,name,nextPrayerTime]=notificationId.split("-").map(String)
+      const snoozeTime=Date.now()+15*50*1000
+
+      chrome.alarms.create(`snooze-${name}-${nextPrayerTime}`,{when:snoozeTime})
+
+      chrome.notifications.clear(notificationId)
+    }
+
+  }
+)
 
 //Controllers
 const getPrayerData = async () => {
@@ -119,6 +169,7 @@ const ensurePrayerData = async () => {
   if (!prayerData || prayerData.today.date.gregorian.date != today) {
     console.log("EnsurePrayer Data Failed")
     await getPrayerData();
+    schedulePrayerAlarms()
     scheduleNextMidnight();
   }
 };
@@ -144,20 +195,20 @@ const scheduleNextMidnight = () => {
   });
 };
 
-// const schedulePrayerAlarms= ()=>{
-//   buildPrayerTimelineforAlarm()
-//   const now=Date.now()
+const schedulePrayerAlarms= ()=>{
+  buildPrayerTimelineforAlarm()
+  const now=Date.now()
   
-//   chrome.storage.local.get("prayerNotificationList", ({prayerNotificationList})=>{
-//     prayerNotificationList.forEach(({name,time,nextPrayerTime})=>{
-//       if(time<=now) return;
-//       const alarmName=`prayer-${name}-${when}`
-//       chrome.alarms.create(alarmName,{when:time})
+  chrome.storage.local.get("prayerNotificationList", ({prayerNotificationList})=>{
+    prayerNotificationList.forEach(({name,time,nextPrayerTime})=>{
+      if(time<=now) return;
+      const alarmName=`prayer-${name}-${nextPrayerTime}`
+      chrome.alarms.create(alarmName,{when:time})
 
-//     })
-//   })
+    })
+  })
 
-// }
+}
 
 const buildPrayerTimelineforAlarm=()=>{
   const prayerList= chrome.storage.local.get("apiresult", ({apiResult})=> {
@@ -222,5 +273,38 @@ const buildTimestamps= (date:string,time:string):number=> {
     0,
     0
   ).getTime();
+}
+
+const canSnooze = (nextPrayerTime:number) =>{
+  const now = Date.now()
+  const difference= nextPrayerTime-now
+
+  const differenceInMin=difference/(1000*60)
+
+  return differenceInMin>20
+}
+
+const showPrayerNotification=(name:string,nextPrayerTime:string)=>{  
+  const allowSnooze=canSnooze(Number(nextPrayerTime))
+
+  const options: chrome.notifications.NotificationCreateOptions= {
+    type: "basic" as const ,
+    iconUrl:"icons/masjid-icon.png",
+    title:`${name} Prayer Time`,
+    message:`It is time for ${name} prayer.`,
+    priority:2
+  }
+
+  if(allowSnooze){
+    options.buttons=[
+      {title:"Snooze 15 min"}
+    ]
+  }
+
+  chrome.notifications.create(
+    `notify-${name}-${nextPrayerTime}`,
+    options,
+  )
+  
 }
 
