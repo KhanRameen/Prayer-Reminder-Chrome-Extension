@@ -1,14 +1,15 @@
 import type { PrayerSettingsForm } from "@/components/types/types";
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async() => {
   // chrome.storage.local.clear()
   // chrome.alarms.clearAll();
-  ensurePrayerData();
+  // await ensurePrayerData();
+  await schedulePrayerAlarms();
+ });
 
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  ensurePrayerData();
+chrome.runtime.onStartup.addListener(async() => {
+  await ensurePrayerData();
+  await schedulePrayerAlarms();
 });
 
 //eventListener
@@ -17,7 +18,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResonse) => {
   if (message.type === "prayerSettingsStored") {
     //call API
     await getPrayerData();
-    schedulePrayerAlarms()
+    await schedulePrayerAlarms()
     //todo: send response
     return true;
   }
@@ -27,16 +28,18 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResonse) => {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "midnightUpdate") {
     await getPrayerData();
-    schedulePrayerAlarms();
+    await schedulePrayerAlarms();
     scheduleNextMidnight();
   }
 
   if(alarm.name.startsWith("prayer-")){
+    console.log("Listening Alarm for Prayer")
     const [,name,nextAlarmTime]=alarm.name.split("-").map(String)
     showPrayerNotification(name,nextAlarmTime)
   }
 
   if(alarm.name.startsWith("snooze-")){
+    console.log("Listenig to Snooze Alarm")
     const [,name,nextPrayerTime]=alarm.name.split("-").map(String)
 
     const allowSnooze=canSnooze(Number(nextPrayerTime))
@@ -47,17 +50,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     title:`${name} Prayer Reminder`,
     message:`You Snoozed ${name} prayer.`,
     priority:2
-  }
+    }
 
-  if(allowSnooze){
-    options.buttons=[
-      {title:"Snooze 15 min"}
-    ]
-  }
+    if(allowSnooze){
+      options.buttons=[
+        {title:"Snooze 15 min"}
+      ]
+    }
 
-  chrome.notifications.create(alarm.name,options)
+    chrome.notifications.create(alarm.name,options)
   }
-
   
 });
 
@@ -67,7 +69,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 chrome.notifications.onButtonClicked.addListener(
   async(notificationId,buttonIndex)=>{
     if(buttonIndex!==0)return ;
-    
+    console.log("Listening to Notification button click")
     if(notificationId.startsWith("notify-")){
       const [,name,nextPrayerTime]=notificationId.split("-").map(String)
       const snoozeTime=Date.now()+15*50*1000
@@ -85,7 +87,7 @@ const getPrayerData = async () => {
   console.log("getting prayer time");
 
   //get data from local storage
-  chrome.storage.local.get(["prayerSettings"], async ({ prayerSettings }) => {
+  await chrome.storage.local.get(["prayerSettings"], async ({ prayerSettings }) => {
     const formData = prayerSettings;
 
     try{
@@ -163,15 +165,21 @@ const fetchPrayerAPI = async (formData:PrayerSettingsForm, date:string) => {
 };
 
 const ensurePrayerData = async () => {
-  const { prayerData } = await chrome.storage.local.get("apiResult");
-  console.log("EnsurePrayer Data")
-  const today = formatDate(new Date());
-  if (!prayerData || prayerData.today.date.gregorian.date != today) {
-    console.log("EnsurePrayer Data Failed")
-    await getPrayerData();
-    schedulePrayerAlarms()
-    scheduleNextMidnight();
-  }
+  await chrome.storage.local.get("apiResult", async({apiResult})=>{
+    console.log("EnsurePrayer Data")
+    const today = formatDate(new Date());
+    if (!apiResult || apiResult.today.date.gregorian.date != today) {
+      console.log("EnsurePrayer Data Failed")
+      await getPrayerData();
+      await schedulePrayerAlarms()
+      scheduleNextMidnight();
+    }
+    else{
+      console.log("Todays prayer data exist")
+    }
+    
+  });
+ 
 };
 
 const formatDate = (date: Date) => {
@@ -195,39 +203,61 @@ const scheduleNextMidnight = () => {
   });
 };
 
-const schedulePrayerAlarms= ()=>{
-  buildPrayerTimelineforAlarm()
+const schedulePrayerAlarms= async()=>{
+  await buildPrayerTimelineforAlarm()
   const now=Date.now()
   
+  console.log("Scheduling Alarm")
+
   chrome.storage.local.get("prayerNotificationList", ({prayerNotificationList})=>{
-    prayerNotificationList.forEach(({name,time,nextPrayerTime})=>{
-      if(time<=now) return;
+    const prayerList:[]=prayerNotificationList
+
+    prayerList.forEach(({name,time,nextPrayerTime})=>{
+      const when = Number(time)
+
+      if(when<=now) return;
+      
+      console.log("creating alarm")
       const alarmName=`prayer-${name}-${nextPrayerTime}`
-      chrome.alarms.create(alarmName,{when:time})
+
+      chrome.alarms.create(alarmName,{when})
+
+      console.log("Alarm Created for each", alarmName)
 
     })
   })
 
+  console.log("Outside Scheduling alarm")
+
 }
 
-const buildPrayerTimelineforAlarm=()=>{
-  const prayerList= chrome.storage.local.get("apiresult", ({apiResult})=> {
+const buildPrayerTimelineforAlarm= async()=>{
+  console.log('Building Timeline')
 
-    const skipList = ["Firstthird", "Sunrise", "Imsak", "Lastthird", "Midnight", "Sunset"]
-    const date=apiResult.today.date.gregorian.date
+  chrome.storage.local.get("apiResult",async({apiResult})=> {
 
-    const prayersToday = [{name:"",time:number}]     
-    Object.entries(apiResult.today.timings).filter(([name, time]) => !skipList.includes(name)).forEach(([name, time]) => {
-        time = buildTimestamps(date, time)
-        prayersToday.push({ name, time })
+    console.log("getting prayer data to build timeline")
+
+    const skipList = ["Firstthird", "Sunrise", "Imsak", "Lastthird", "Midnight", "Sunset"]    
+    const date=await apiResult.today.date.gregorian.date
+    const prayersToday: {name:string,time:string}[] = []   
+    const timings=await apiResult.today.timings
+
+    Object.entries(timings).filter(([name, time]) => !skipList.includes(name)).forEach(([name, time]) => {
+        console.log("Object Entries")
+        const timestamp = buildTimestamps(date, String(time))
+        prayersToday.push({ name, time:String(timestamp) })
+        console.log("Prayers today push")
     }) //Array
 
     prayersToday.sort((a, b) => Number(a.time) - Number(b.time))
 
+    console.log({prayersToday})
+    console.log(prayersToday.length)
 
     const tomorrowsFajr=apiResult.tomorrowsFajr //time
 
-    const prayerlist = [];
+    const prayerlist = [];  
 
     //create the list
     for (let i = 0; i < prayersToday.length; i++) {
@@ -236,12 +266,13 @@ const buildPrayerTimelineforAlarm=()=>{
             console.log("if Case")
             const { name, time } = prayersToday[i]
             // const prayerTime = buildTimestamps(date, time)
-            const nextPrayerTime = buildTimestamps(date, tomorrowsFajr)
+            const nextPrayerTime = String(buildTimestamps(date, tomorrowsFajr))
             prayerlist.push({
                 name,
                 time,
                 nextPrayerTime
             })
+            console.log("prayerlist push")
         }
         else {
             console.log("else case")
@@ -252,16 +283,18 @@ const buildPrayerTimelineforAlarm=()=>{
                 time,
                 nextPrayerTime
             })
-
+            console.log("prayerlist push")
         }
       }
-      chrome.storage.local.set({prayerNotificationList:prayerList})           
+      console.log({prayerlist})
+      await chrome.storage.local.set({prayerNotificationList:prayerlist})           
+      console.log("Timeline Saved in the local storage")
   })
   
 }
 
 const buildTimestamps= (date:string,time:string):number=> {
-   const [day, month, year] = date.split("-").map(Number);
+  const [day, month, year] = date.split("-").map(Number);
   const [hours, minutes] = time.split(":").map(Number);
 
   return new Date(
