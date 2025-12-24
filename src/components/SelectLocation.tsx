@@ -1,7 +1,7 @@
-import { City, Country, State } from "country-state-city"
+import { City, Country } from "country-state-city"
 import { Select, SelectItem, SelectTrigger, SelectContent, SelectValue } from "@/components/ui/select"
 import { useEffect, useState } from "react"
-import type { ICity, IState } from 'country-state-city'
+import type { ICity } from 'country-state-city'
 import { calculationMethods } from "./data/constants"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
@@ -85,7 +85,7 @@ export const SelectLocation = () => {
                                 field.onChange({ isoCode, name: selected?.name ?? "" })
                             }}
                             value={field.value?.isoCode} required>
-                            <SelectTrigger className="w-[280px]">
+                            <SelectTrigger className="w-[300px]">
                                 <SelectValue> {field.value?.name ?? "Select Your Country"}</SelectValue>
                             </SelectTrigger>
                             <SelectContent className="h-[300px]">
@@ -107,11 +107,11 @@ export const SelectLocation = () => {
                     control={control}
                     render={({ field }) => (
 
-                        <Select disabled={!country} onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger>
+                        <Select disabled={!country} onValueChange={field.onChange} value={field.value} required>
+                            <SelectTrigger className="w-[300px]">
                                 <SelectValue placeholder="Select Your City" />
                             </SelectTrigger>
-                            <SelectContent >
+                            <SelectContent className="h-[300px]">
                                 {
                                     (allCities.length === 0 && country.isoCode) ?
                                         <SelectItem value={country!.isoCode}>{country!.name}</SelectItem>
