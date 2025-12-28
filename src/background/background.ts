@@ -1,15 +1,13 @@
 import type { PrayerSettingsForm } from "@/components/types/types";
 
 chrome.runtime.onInstalled.addListener(async() => {
-  // chrome.storage.local.clear()
-  // chrome.alarms.clearAll();
-  // await ensurePrayerData();
-  await schedulePrayerAlarms();
+  chrome.storage.local.clear()
+  chrome.alarms.clearAll();
+  await ensurePrayerData();
  });
 
 chrome.runtime.onStartup.addListener(async() => {
   await ensurePrayerData();
-  await schedulePrayerAlarms();
 });
 
 //eventListener
@@ -18,10 +16,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResonse) => {
   if (message.type === "prayerSettingsStored") {
     //call API
     await getPrayerData();
-    await schedulePrayerAlarms()
-    //todo: send response
-    return true;
+    await schedulePrayerAlarms();
+    scheduleNextMidnight();
+    sendResonse({response:"Success"})  
   }
+  return true;
 });
 
 //alarmListener
@@ -48,7 +47,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     type: "basic" as const ,
     iconUrl:"icons/masjid-icon.png",
     title:`${name} Prayer Reminder`,
-    message:`You Snoozed ${name} prayer.`,
+    message:`You Snoozed ${name} prayer. Your success here and in the hereafter awaits`,
     priority:2
     }
 
@@ -70,7 +69,7 @@ chrome.notifications.onButtonClicked.addListener(
   async(notificationId,buttonIndex)=>{
     if(buttonIndex!==0)return ;
     console.log("Listening to Notification button click")
-    if(notificationId.startsWith("notify-")){
+    if(notificationId.startsWith("notify-") || notificationId.startsWith("snooze-")){
       const [,name,nextPrayerTime]=notificationId.split("-").map(String)
       const snoozeTime=Date.now()+15*50*1000
 
@@ -144,7 +143,7 @@ const fetchPrayerAPI = async (formData:PrayerSettingsForm, date:string) => {
   try {
     console.log("Fetching Api")
     const res = await fetch(
-      `https://api.aladhan.com/v1/timingsByCity/${date}?city=${formData.City}&country=${formData.Country.isoCode}&method=${formData.CalculationMethod}&shafaq=general&tune=5%2C${formData.Tune.Fajr}%2C5%2C${formData.Tune.Duhr}%2C${formData.Tune.Asr}%2C${formData.Tune.Maghrib}%2C0%2C${formData.Tune.Isha}%2C-6&school=${formData.JuristicMethod}&midnightMode=${formData.MidnightMode}timezonestring=UTC&calendarMethod=UAQ`
+      `https://api.aladhan.com/v1/timingsByCity/${date}?city=${formData.City}&country=${formData.Country.isoCode}&method=${formData.CalculationMethod}&shafaq=general&tune=5%2C${formData.Tune.Fajr}%2C${formData.Tune.Sunrise}%2C${formData.Tune.Dhuhr}%2C${formData.Tune.Asr}%2C${formData.Tune.Maghrib}%2C0%2C${formData.Tune.Isha}%2C-6&school=${formData.JuristicMethod}&midnightMode=${formData.MidnightMode}timezonestring=UTC&calendarMethod=UAQ`
     );
 
     if (!res.ok) {
@@ -168,14 +167,14 @@ const ensurePrayerData = async () => {
   await chrome.storage.local.get("apiResult", async({apiResult})=>{
     console.log("EnsurePrayer Data")
     const today = formatDate(new Date());
-    if (!apiResult || apiResult.today.date.gregorian.date != today) {
+    if (!apiResult && apiResult.today.date.gregorian.date != today) {
       console.log("EnsurePrayer Data Failed")
       await getPrayerData();
       await schedulePrayerAlarms()
       scheduleNextMidnight();
     }
     else{
-      console.log("Todays prayer data exist")
+      console.log("Todays prayer data and alarm exist")
     }
     
   });
@@ -230,6 +229,7 @@ const schedulePrayerAlarms= async()=>{
   console.log("Outside Scheduling alarm")
 
 }
+
 
 const buildPrayerTimelineforAlarm= async()=>{
   console.log('Building Timeline')
@@ -286,6 +286,7 @@ const buildPrayerTimelineforAlarm= async()=>{
             console.log("prayerlist push")
         }
       }
+
       console.log({prayerlist})
       await chrome.storage.local.set({prayerNotificationList:prayerlist})           
       console.log("Timeline Saved in the local storage")
@@ -324,13 +325,13 @@ const showPrayerNotification=(name:string,nextPrayerTime:string)=>{
     type: "basic" as const ,
     iconUrl:"icons/masjid-icon.png",
     title:`${name} Prayer Time`,
-    message:`It is time for ${name} prayer.`,
+    message:`It is time to offer ${name} prayer. Come to Prayer, Come to Success!`,
     priority:2
   }
 
   if(allowSnooze){
     options.buttons=[
-      {title:"Snooze 15 min"}
+      {title:"Snooze 10 min"}
     ]
   }
 
