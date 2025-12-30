@@ -164,10 +164,11 @@ const fetchPrayerAPI = async (formData:PrayerSettingsForm, date:string) => {
 };
 
 const ensurePrayerData = async () => {
-  await chrome.storage.local.get("apiResult", async({apiResult})=>{
+  chrome.storage.local.get("apiResult", async({apiResult})=>{
     console.log("EnsurePrayer Data")
-    const today = formatDate(new Date());
-    if (!apiResult && apiResult.today.date.gregorian.date != today) {
+    const now=new Date()
+    const today = formatDate(now);
+    if (!apiResult && apiResult.today.date.gregorian.date !== today) {
       console.log("EnsurePrayer Data Failed")
       await getPrayerData();
       await schedulePrayerAlarms()
