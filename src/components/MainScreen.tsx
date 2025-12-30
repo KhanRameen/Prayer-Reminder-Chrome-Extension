@@ -1,7 +1,11 @@
 import { EllipsisVertical } from "lucide-react"
 import { AsrIcon, DhuhrIcon, FajrIcon, IshaIcon, LocationIcon, MaghribIcon, SunriseIcon } from "./ui/Icons"
 import { useEffect, useState } from "react"
-
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "./ui/dialog"
+import { Settings } from "./Settings"
+import { LoadingScreen } from "./LoadingScreen"
+import type { PrayerSettingsForm } from "./types/types"
+import type { Settings } from "http2"
 
 const AllPrayersDisplay = [
     {
@@ -126,7 +130,8 @@ const getTimeFormated = (date: Date) => {
 
 
 
-export const MainScreen = () => {
+export const MainScreen = ({ settings, setSettings }: { settings: PrayerSettingsForm, setSettings: (Settings: PrayerSettingsForm) => void }) => {
+    const [screenState, setScreenState] = useState<"loading" | "ready">("loading")
     const [data, setData] = useState(null)
     const [currentPrayer, setCurrentPrayer] = useState<{ name: string, date: Date }>()
     const [nextPrayer, setNextPrayer] = useState<{ name: string, date: Date }>()
@@ -135,16 +140,19 @@ export const MainScreen = () => {
 
     useEffect(() => {
         console.log("main useEffect")
-        chrome.storage.local.get(["apiResult"], (res) => {
-            if (!res.apiResult) {
-                return
-            }
-            console.log("apiresult on frontend")
 
-            setData(res.apiResult.today)
-            const timeline = getPrayerTimeline(res.apiResult)
+        chrome.storage.local.get(["apiResult"], ({ apiResult }) => {
+            if (!apiResult) {
+                setScreenState("loading")
+            }
+
+            setScreenState("ready")
+            console.log("apiresult on frontend")
+            setData(apiResult.today)
+            console.log("here, the error of today")
+            const timeline = getPrayerTimeline(apiResult)
             const { current, next } = getCurrentAndNextPrayerTime(timeline)
-            console.log("got the timelie", { current, next })
+            console.log("got the timeline", { current, next })
 
             setCurrentPrayer(current)
             setNextPrayer(next)
@@ -160,70 +168,98 @@ export const MainScreen = () => {
 
             setLocation({ city, country })
         })
-    }, [])
+    }, [settings])
 
     // const timeLeftText = getTimeLeft(nextPrayer?.date)
     // setTimeLeft(timeLeftText)
 
 
+
     return (
-        <div className="flex flex-col gap-y-3 p-0.5 text-[#3A3843]">
-            {data && <>
-                <div className="grid grid-cols-2 mb-20">
-                    <div className="flex gap-x-1.5">
-                        <LocationIcon />
-                        <p className="font-numans">{location.city}, {location.country}</p>
-                    </div>
-                    <div className="flex justify-end">
-                        <EllipsisVertical className="stroke-1 size-5 bg-3A3843 hover:scale-110 transition-transform duration-200 cursor-pointer" />
-                    </div>
-                </div>
+        <>
+            {screenState === 'loading' ? <LoadingScreen /> :
+                <div className="flex flex-col gap-y-3 p-0.5 text-[#3A3843]">
+                    {data &&
+                        <><div className="grid grid-cols-2 mb-14">
+                            <div className="flex gap-x-1.5">
+                                <LocationIcon />
+                                <p className="font-numans">{location.city}, {location.country}</p>
+                            </div>
+                            <div className="flex justify-end">
 
-                <div className="p-5 flex flex-col justify-center text-center gap-y-0">
-                    <p
-                        className="font-numans">
-                        {data.date.hijri.month.en}, {data.date.hijri.day}, {data.date.hijri.year} {data.date.hijri.designation.abbreviated}
-                    </p>
-                    {currentPrayer &&
-                        <div className="relative flex flex-col items-center ">
-                            <span
-                                className="max-h-20 font-figtree text-[62px] text-white text-shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-                                {getTimeFormated(currentPrayer?.date)}
-                            </span>
-                            <span
-                                className="font-prompt font-bold text-[32px] text-[#1D596D]">
-                                {currentPrayer?.name?.toUpperCase()}
-                            </span>
+
+                                <Dialog>
+                                    <DialogTrigger>
+                                        <EllipsisVertical className="stroke-1 size-5 bg-3A3843 hover:scale-110 transition-transform duration-200 cursor-pointer" />
+                                    </DialogTrigger>
+                                    <DialogContent className="bg-transparent">
+                                        <DialogTitle className="hidden"></DialogTitle>
+                                        <DialogDescription className="hidden"></DialogDescription>
+                                        <Settings setSettings={setSettings} />
+                                    </DialogContent>
+
+                                </Dialog>
+
+
+
+
+                            </div>
                         </div>
-                    }
-                    {nextPrayer &&
-                        <p
-                            className="font-numans text-sm">
-                            {timeLeft} left in {nextPrayer?.name}
-                        </p>
-                    }
-                </div>
 
-                <div className="p-3 mt-8 justify-center">
-                    <div className="grid grid-cols-6 gap-x-1 justify-around">
-                        {AllPrayersDisplay.map(({ timingKey, Icon }) => {
-                            const time = data?.timings?.[timingKey]
-                            // if (!time || !Icon) return null;
+                            <div className="p-3 flex flex-col justify-center text-center">
+                                <p
+                                    className="font-numans">
+                                    {data.date.hijri.month.en}, {data.date.hijri.day}, {data.date.hijri.year} {data.date.hijri.designation.abbreviated}
+                                </p>
+                                {currentPrayer &&
+                                    <div className="relative flex flex-col items-center ">
+                                        <span
+                                            className="max-h-20 font-figtree text-[62px] text-white text-shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+                                            {getTimeFormated(currentPrayer?.date)}
+                                        </span>
+                                        <span
+                                            className="font-prompt font-bold text-[32px] text-[#1D596D]">
+                                            {currentPrayer?.name?.toUpperCase()}
+                                        </span>
+                                    </div>
+                                }
+                                <p dir="rtl" className="text-[16px] mb-4">حيَّ عَلَى الصَّلَاة, حَيَّ عَلَى الْفَلَاح</p>
 
-                            return (
-                                <div key={timingKey} className="h-10 flex flex-col items-center">
-                                    <div className="align-middle items-center h-5"><Icon /></div>
-                                    <p className="font-prompt font-medium py-1">{timingKey}</p>
-                                    <p className="font-numans ">{time}</p>
+                            </div>
+
+                            <div className="p-3 justify-center text-center">
+                                {nextPrayer &&
+                                    <p
+                                        className="font-numans text-sm">
+                                        {timeLeft} left in {nextPrayer?.name}
+                                    </p>
+                                }
+                                <div className="mt-8 grid grid-cols-6 gap-x-1 justify-around">
+                                    {AllPrayersDisplay.map(({ timingKey, Icon }) => {
+                                        const time = data?.timings?.[timingKey]
+                                        // if (!time || !Icon) return null;
+
+                                        return (
+                                            <div key={timingKey} className="h-10 flex flex-col items-center">
+                                                <div className="align-middle items-center h-5"><Icon /></div>
+                                                <p className="font-prompt font-medium pt-1">{timingKey}</p>
+                                                <p className="font-numans text-[13px]">{time}</p>
+                                            </div>
+                                        )
+                                    })}
+
                                 </div>
-                            )
-                        })}
 
-                    </div>
 
-                </div></>
-            }
+                            </div>
 
-        </div>
+                        </>
+                    }
+
+                </div>}
+        </>
+
     )
 }
+
+

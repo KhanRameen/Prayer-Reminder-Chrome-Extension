@@ -17,11 +17,12 @@ import { TooltipContent, TooltipTrigger, Tooltip, TooltipProvider } from "./ui/t
 
 
 
-export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm) => void }) => {
+export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettingsForm) => void }) => {
 
     const [allCities, setAllCities] = useState<ICity[]>([])
 
-    const { control, handleSubmit, watch, setValue, setError, clearErrors, formState: { isSubmitting, errors } } = useForm<PrayerSettingsForm>({
+    const { control, handleSubmit, watch, setValue, setError, clearErrors, formState: { isSubmitting, errors, isValid } } = useForm<PrayerSettingsForm>({
+        mode: "onChange",
         defaultValues: {
             Country: {
                 isoCode: "",
@@ -44,14 +45,7 @@ export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm
 
     const countries = Country.getAllCountries()
 
-
-
-    //watch (all inputs)
     const country = watch("Country")
-    // const city = watch("City")
-    // const calculationMethod = watch("CalculationMethod")
-    // const juristicMethod = watch("JuristicMethod")
-    // const midnightMode = watch("MidnightMode")
     const tune = watch("Tune")
 
     useEffect(() => {
@@ -64,21 +58,21 @@ export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm
         setAllCities(cities!)
     }, [country?.isoCode])
 
-    // const savePrayerSettings = async (data: PrayerSettingsForm) => {
-    //     console.log(data)
-    //     await chrome.storage.local.set({ prayerSettings: data })
-    //     chrome.runtime.sendMessage(
-    //         { type: "prayerSettingsStored" },
-    //         ({ response }) => {
-    //             console.log("Background Response", response)
-    //         }
-    //     )
-    // }
+
+
+    const savePrayerSettings = async (data: PrayerSettingsForm) => {
+        console.log(data)
+        await chrome.storage.local.set({ prayerSettings: data })
+        chrome.runtime.sendMessage(
+            { type: "prayerSettingsStored" }
+        )
+        setSettings(data)
+    }
 
     return (
         <ScrollArea className="h-115 rounded-md w-full">
             <div className="w-full flex flex-col gap-y-4 p-1">
-                <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
+                <form onSubmit={handleSubmit(savePrayerSettings)} className="space-y-4">
                     {/* <h1 className="font-medium text-lg">Notification Settings</h1>
 
                     <Controller
@@ -118,7 +112,10 @@ export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm
                     <Controller
                         name="Country"
                         control={control}
-                        rules={{ required: "Country is required" }}
+                        rules={{
+                            validate: (value) => (value && value.isoCode !== "") ? true : "Country is required"
+                        }}
+
                         render={({ field }) => (
                             <>
                                 <Select
@@ -155,24 +152,30 @@ export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm
                     <Controller
                         name="City"
                         control={control}
+                        rules={{ validate: (value) => value !== "" ? true : "City is required" }}
                         render={({ field }) => (
+                            <>
+                                <Select disabled={!country.isoCode} onValueChange={field.onChange} value={field.value} required>
+                                    <SelectTrigger className="w-[320] mt-2">
+                                        <SelectValue placeholder="Select Your City" />
+                                    </SelectTrigger>
+                                    <SelectContent className="h-80">
+                                        {
+                                            (allCities.length === 0 && country.isoCode) ?
+                                                <SelectItem value={country!.isoCode}>{country!.name}</SelectItem>
+                                                : allCities.filter(Boolean).map(city =>
+                                                    <SelectItem key={city!.isoCode} value={city!.name}>
+                                                        {city!.name}
+                                                    </SelectItem>
+                                                )
+                                        }
+                                    </SelectContent>
+                                </Select>
 
-                            <Select disabled={!country.isoCode} onValueChange={field.onChange} value={field.value} required>
-                                <SelectTrigger className="w-[320] mt-2">
-                                    <SelectValue placeholder="Select Your City" />
-                                </SelectTrigger>
-                                <SelectContent className="h-80">
-                                    {
-                                        (allCities.length === 0 && country.isoCode) ?
-                                            <SelectItem value={country!.isoCode}>{country!.name}</SelectItem>
-                                            : allCities.filter(Boolean).map(city =>
-                                                <SelectItem key={city!.isoCode} value={city!.name}>
-                                                    {city!.name}
-                                                </SelectItem>
-                                            )
-                                    }
-                                </SelectContent>
-                            </Select>
+                                {
+                                    errors.Country && <p className="text-red-600 text-xs">{errors.Country.message}</p>
+                                }
+                            </>
 
                         )}
                     />
@@ -292,7 +295,7 @@ export const Settings = ({ handleSave }: { handleSave: (data: PrayerSettingsForm
 
                         ))}
                     </div>
-                    <Button type="submit" disabled={isSubmitting} className="w-full cursor-pointer">{isSubmitting ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white/90" /> : "Save"}</Button>
+                    <Button type="submit" disabled={isSubmitting || !isValid} className="w-full cursor-pointer">{isSubmitting ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white/90" /> : "Save"}</Button>
                 </form >
             </div >
         </ScrollArea>

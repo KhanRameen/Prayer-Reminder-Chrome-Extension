@@ -1,41 +1,33 @@
 import { useEffect, useState } from "react";
-import { SelectLocation } from "../components/SelectLocation";
+import { Settings } from "../components/Settings";
 import { MainScreen } from "@/components/MainScreen";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import type { PrayerSettingsForm } from "@/components/types/types";
+import useChangeScreen from "@/hooks/useChangeScreen";
 
 export default function Popup() {
-    const [mainScreen, setMainScreen] = useState(false)
-    const [data, setData] = useState("")
+
+    const { screen, setScreen, settings, setSettings } = useChangeScreen()
 
     useEffect(() => {
         console.log("popup prayer setting use effect")
         chrome.storage.local.get("prayerSettings", (res) => {
             if (!res.prayerSettings) {
-                setMainScreen(false)
+                setScreen("settings")
             }
             else {
-                setMainScreen(true)
+                setScreen("main")
             }
         })
-    }, [])
-
-    useEffect(() => {
-        console.log("popup api use effect")
-        chrome.storage.local.get(["apiResult", "apiError"], ({ apiResult, apiError }) => {
-            if (apiError) {
-                setData("no")
-            }
-            setData("data")
-
-        })
-    }, [mainScreen])
+    }, [settings])
 
 
     return (
-        <div className="w-110 h-140 p-4 bg-[url('/background.svg')] bg-cover bg-center">
-            <div className="m-0.5 bg-white/15 p-3 rounded-sm h-full">
-                {/* todo: maintain state/ find a way to show main screen when you hit save.. currently not showing */}
-                {!mainScreen ? <SelectLocation /> : <> <MainScreen /></>}
-                {/* <SelectLocation /> */}
+        <div className="w-100 h-130 p-4 bg-[url('/background.svg')] bg-cover bg-center">
+            <div className="m-0.5 bg-white/15 p-3 rounded-sm h-full transition-opacity duration-200">
+
+                {(screen === "loading" && <LoadingScreen />) || (screen === "settings" &&
+                    <Settings setSettings={setSettings} />) || (screen === "main" && <MainScreen settings={settings!} setSettings={setSettings} />)}
             </div>
 
         </div>

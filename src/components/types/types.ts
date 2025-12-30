@@ -9,7 +9,8 @@ export type PrayerSettingsForm = {
   MidnightMode: "0" | "1";
   Tune: {
     Fajr: number;
-    Duhr: number;
+    Sunrise: number;
+    Dhuhr: number;
     Asr: number;
     Maghrib: number;
     Isha: number;
