@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Settings } from "../components/Settings";
 import { MainScreen } from "@/components/MainScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import type { PrayerSettingsForm } from "@/components/types/types";
 import useChangeScreen from "@/hooks/useChangeScreen";
 
 export default function Popup() {
@@ -33,13 +32,5 @@ export default function Popup() {
         </div>
     );
 };
-//todo: add a name to the extention
 
 
-
-//flow
-//Data needed...
-// prayer time (object) => data.timings,
-// Hijri Date => data.hijri.date,
-//Islamic Month =>data.month.en
-//Show City => user's Data => store in local storage

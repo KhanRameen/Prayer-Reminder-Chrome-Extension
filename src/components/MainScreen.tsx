@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 import { Settings } from "./Settings"
 import { LoadingScreen } from "./LoadingScreen"
 import type { PrayerSettingsForm } from "./types/types"
-import type { Settings } from "http2"
 
 const AllPrayersDisplay = [
     {
