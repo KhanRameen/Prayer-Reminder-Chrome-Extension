@@ -164,7 +164,7 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
                                             (allCities.length === 0 && country.isoCode) ?
                                                 <SelectItem value={country!.isoCode}>{country!.name}</SelectItem>
                                                 : allCities.filter(Boolean).map(city =>
-                                                    <SelectItem key={city!.isoCode} value={city!.name}>
+                                                    <SelectItem key={city!.stateCode} value={city!.name}>
                                                         {city!.name}
                                                     </SelectItem>
                                                 )
