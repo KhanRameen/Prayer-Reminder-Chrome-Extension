@@ -32,12 +32,27 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 
   if(alarm.name.startsWith("prayer-")){
+    const now = Date.now()
+
+    const alarmTime= alarm.scheduledTime
+
+    if(now-alarmTime> 10*60*1000){
+      return 
+    }
     console.log("Listening Alarm for Prayer")
     const [,name,nextAlarmTime]=alarm.name.split("-").map(String)
     showPrayerNotification(name,nextAlarmTime)
   }
 
   if(alarm.name.startsWith("snooze-")){
+    const now = Date.now()
+
+    const alarmTime= alarm.scheduledTime
+
+    if(now-alarmTime> 3*60*1000){
+      return 
+    }
+
     console.log("Listenig to Snooze Alarm")
     const [,name,nextPrayerTime]=alarm.name.split("-").map(String)
 
