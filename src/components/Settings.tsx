@@ -127,7 +127,7 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
                                     }}
                                     value={field.value?.isoCode} required>
                                     <SelectTrigger className="w-[320] mt-2">
-                                        <SelectValue> {field.value?.name ?? "Select Your Country"}</SelectValue>
+                                        <SelectValue placeholder="Select Your Country"> {field.value?.name ?? "Select Your Country"}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent className="h-80">
                                         {countries.filter(Boolean).map((country) => (country &&
@@ -205,9 +205,9 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
                         control={control}
                         render={({ field }) => (
                             <RadioGroup className="flex gap-3 mt-3 mb-5" value={field.value} onValueChange={field.onChange}>
-                                <RadioGroupItem value="0" id="0" className="" />
+                                <RadioGroupItem value="0" id="0" className="cursor-pointer" />
                                 <Label htmlFor="0">Shafi</Label>
-                                <RadioGroupItem value="1" id="1" />
+                                <RadioGroupItem value="1" id="1" className="cursor-pointer" />
                                 <Label htmlFor="1">Hanafi (Later Asr)</Label>
                             </RadioGroup>
                         )} />
@@ -276,8 +276,9 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
                                                     type="button"
                                                     variant={"ghost"}
                                                     disabled={(field.value) >= 30 ? true : false}
-                                                    onClick={() => { setValue(`Tune.${prayer}`, field.value + 1) }}>
-                                                    <ChevronUp></ChevronUp>
+                                                    onClick={() => { setValue(`Tune.${prayer}`, field.value + 1) }}
+                                                    className="cursor-pointer">
+                                                    <ChevronUp />
                                                 </Button>
 
                                                 <Button
@@ -285,8 +286,9 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
                                                     type="button"
                                                     variant={"ghost"}
                                                     disabled={(field.value) <= -15 ? true : false}
-                                                    onClick={() => { setValue(`Tune.${prayer}`, field.value - 1) }}>
-                                                    <ChevronDown></ChevronDown>
+                                                    onClick={() => { setValue(`Tune.${prayer}`, field.value - 1) }}
+                                                    className="cursor-pointer">
+                                                    <ChevronDown />
                                                 </Button>
 
                                             </div>
@@ -295,7 +297,7 @@ export const Settings = ({ setSettings }: { setSettings: (Settings: PrayerSettin
 
                         ))}
                     </div>
-                    <Button type="submit" disabled={isSubmitting || !isValid} className="w-full cursor-pointer">{isSubmitting ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white/90" /> : "Save"}</Button>
+                    <Button type="submit" disabled={isSubmitting || !isValid} className="w-full cursor-pointer">{isSubmitting ? <span className="cursor-pointer h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white/90" /> : "Save"}</Button>
                 </form >
             </div >
         </ScrollArea>
